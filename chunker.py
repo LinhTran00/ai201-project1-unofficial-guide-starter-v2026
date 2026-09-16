@@ -22,6 +22,7 @@ to it, write down what you saw, and move on. That's a real observation about
 your pipeline, not giving up.
 """
 
+import re
 from dataclasses import dataclass
 
 import config
@@ -81,23 +82,42 @@ def fallback_split(
 
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
-    """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    """Split each document on natural paragraph boundaries."""
+    chunks: list[Chunk] = []
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    for doc in documents:
+        text = doc.text.strip()
+        if not text:
+            continue
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
+        paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
+        if not paragraphs:
+            continue
 
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
-    """
-    return fallback_split(documents)
+        index = 0
+        for paragraph in paragraphs:
+            pieces = [paragraph]
+            if len(paragraph) > config.CHUNK_SIZE:
+                pieces = []
+                start = 0
+                while start < len(paragraph):
+                    piece = paragraph[start : start + config.CHUNK_SIZE].strip()
+                    if piece:
+                        pieces.append(piece)
+                    start += config.CHUNK_SIZE - config.CHUNK_OVERLAP
+
+            for piece in pieces:
+                chunks.append(
+                    Chunk(
+                        text=piece,
+                        source=doc.source,
+                        index=index,
+                        produced_by="chunker.py::split_documents",
+                    )
+                )
+                index += 1
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:

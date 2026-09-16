@@ -60,7 +60,6 @@ def report(status, name, detail=""):
 
 
 # --- 1. Python --------------------------------------------------------------
-
 def check_python():
     v = sys.version_info
     actual = f"{v.major}.{v.minor}.{v.micro}"
