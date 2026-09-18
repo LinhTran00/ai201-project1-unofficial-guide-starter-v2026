@@ -19,12 +19,14 @@ pipeline earns credit; *"80% seemed reasonable"* does not.
 
 ## 1. Retrieved chunks contain the answer
 
-For at least 4 of my 5 test questions, the retrieved chunks include one that
+For at least 3 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
 **Why this target:**
 <!-- e.g. "One of my questions is about a topic only two documents mention, so
      I expect that one to be hard." -->
+Most of my questions is kinda specific, and mostly have only three documents or less mention it, so I expect a 50/50
+
 
 ---
 
@@ -35,14 +37,12 @@ Every answer the system produces names at least one source document.
 **Why this target:**
 <!-- Why all five and not four? What about your setup makes that achievable —
      or what would have to go wrong for it not to be? -->
-
+I set this at 5 of 5 because citing a source doesn't depend on retrieval being correct, the source filename gets attached to every chunk automatically, so it should show up every time, even on the answers that get the content wrong.
 ---
 
 ## 3. The relevance gate stops out-of-corpus questions
 
-When I ask a question my documents clearly don't cover, the relevance gate
-stops it and the system returns "I don't have enough information about that" —
-in at least 4 of 5 tries.
+When I ask a question my documents clearly don't cover, the relevance gate stops it and the system returns "I don't have enough information about that" — in at least 4 of 5 tries.
 
 <!-- The five questions are the ones in `OUT_OF_SCOPE` at the bottom of
      `questions.py`, and `run_eval.py` puts them through the gate and writes
@@ -56,6 +56,7 @@ in at least 4 of 5 tries.
 ---
 
 ## 4. Something about your chunks
+At least 4 of 5 sampled chunks are over 180 characters long and end on a completed sentence, with no thought cut off mid-way at either boundary.
 
 <!-- YOU WRITE THIS ONE.
 
@@ -72,12 +73,13 @@ in at least 4 of 5 tries.
 
 
 **Why this target:**
-
+I set 180 rather than 200 because some paragraphs in my corpus are naturally short and complete on their own (like the hospital paragraph, under 200 characters but a whole thought). 180 still filters out fragments while not penalizing chunks that are just genuinely short sections.
 
 
 ---
 
 ## 5. Your choice
+For questions requiring a number from the text (opening hours, prices, distances), the retrieved chunk contains the exact number needed, in at least 1 of 2 such test questions.
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -90,7 +92,7 @@ in at least 4 of 5 tries.
 
 
 **Why this target:**
-
+I set this at 1 of 2 because only 2 of my 5 questions ask for a number, and I haven't tested this yet. With such a small sample, one miss shouldn't fail the whole criterion, but two would suggest a real problem
 
 
 ---
