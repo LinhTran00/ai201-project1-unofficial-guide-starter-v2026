@@ -23,16 +23,16 @@ names a target of "4 of 5", and four of three is not a thing.
 
 QUESTIONS = [
     # {"question": "...", "expects": "..."},
-    {"question": "What's the difference between Halden Bay and Brightwater in winter?", 
-     "expects": "close"},
-    {"question": "What types of payments are most common in Thornby Well?", 
-     "expects": "cash"},
-    {"question": "What can you do in Kestrelford in spring or summer that you can't do as easily in winter?", 
-     "expects": "market"},
-    {"question": "How much longer should you plan for a Brightwater walk in winter, and why?", 
-     "expects": "four minutes"},
-    {"question": "How much cheaper is the food on Corry Lane compared to the riverside strip, and why is it cheaper?", 
-     "expects": "less"},
+    {"question": "What's the difference between Kestrelford's pubs and Marchwood's kitchens in terms of when you can eat?",
+     "expects": "later"},
+    {"question": "What's the most common source of confusion for visitors using buses in the region?",
+     "expects": "tickets"},
+    {"question": "What can you do at Givens Mill in spring or summer that you can't do in winter?",
+     "expects": "tour"},
+    {"question": "How much extra time should you allow to reach the Elder Ness lighthouse at the highest spring tides, and why?",
+     "expects": "two hours"},
+    {"question": "How much cheaper is Fell Street compared to the Halden Bay harbour front, and why is it cheaper?",
+     "expects": "half"},
 ]
 
 # Questions from a different world entirely. Your gate should refuse all five.

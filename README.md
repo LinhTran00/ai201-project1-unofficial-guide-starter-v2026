@@ -48,9 +48,9 @@ they ever reach the model.
 
 My split_documents function chunks by paragraph first and only drops into the fixed-size sliding window when a single paragraph is longer than CHUNK_SIZE. So for this corpus, CHUNK_SIZE and CHUNK_OVERLAP aren't really what's driving the chunk boundaries, paragraph structure is.
 
-When I went through the travel_guides corpus, almost no paragraph comes close to 500 characters, most are much shorter than that. That matters for what these two settings are actually doing here. If I lowered CHUNK_SIZE further, it wouldn't make my chunks more precise, it would just force the sliding-window fallback to kick in on paragraphs that currently pass through fine, cutting whole thoughts in half just because they hit an arbitrary limit. A short paragraph is usually one complete idea, so splitting it doesn't add precision, it just breaks it: both halves lose context, and neither one is enough on its own to answer a question.
+When I went through the travel_guides corpus, almost no paragraph comes close to 600 characters, most are much shorter than that. That matters for what these two settings are actually doing here. If I lowered CHUNK_SIZE further, it wouldn't make my chunks more precise, it would just force the sliding-window fallback to kick in on paragraphs that currently pass through fine, cutting whole thoughts in half just because they hit an arbitrary limit. A short paragraph is usually one complete idea, so splitting it doesn't add precision, it just breaks it: both halves lose context, and neither one is enough on its own to answer a question.
 
-That's why I kept CHUNK_SIZE at 500, it stays comfortably above the length of my typical paragraph, so almost every paragraph ends up as its own clean, unsplit chunk. CHUNK_OVERLAP at 100 is only there for the rare case: a longer paragraph, or a few short ones merged together by merge_short_paragraphs, that ends up over 500 characters and has to go through the sliding-window path. In that case, 100 characters of overlap is enough to keep a sentence from getting cut cleanly at a chunk boundary, without duplicating a lot of text the way a bigger overlap like 250 would, especially since this fallback path barely gets used anyway.
+That's why I kept CHUNK_SIZE at 600, it stays comfortably above the length of my most characters paragraph, so almost every paragraph ends up as its own clean, unsplit chunk. CHUNK_OVERLAP at 100 is only there for the rare case: a longer paragraph, or a few short ones merged together by merge_short_paragraphs, that ends up over 600 characters and has to go through the sliding-window path. In that case, 100 characters of overlap is enough to keep a sentence from getting cut cleanly at a chunk boundary, without duplicating a lot of text the way a bigger overlap like 250 would, especially since this fallback path barely gets used anyway.
 
 So overall, for this corpus, paragraph structure is what actually sets my chunk boundaries. CHUNK_SIZE and CHUNK_OVERLAP are just tuned as a backup for the few paragraphs long enough to need the fallback, not as the main way I'm splitting.
 
@@ -67,7 +67,7 @@ So overall, for this corpus, paragraph structure is what actually sets my chunk 
 
 ## Sample Chunks
 
-From `python app.py chunks -n 5` — 116 chunks total, five spread across the corpus.
+From `python app.py chunks -n 5` — 115 chunks total, five spread across the corpus.
 
 **Chunk 1** — source: `guide_accessibility.md#0` — produced by: `chunker.py::split_documents`
 
@@ -125,27 +125,51 @@ heading two paragraphs up. Sentences like that are the ones I'd expect to miss.
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
 
-**Question:**
+**Question:** What's the difference between Kestrelford's pubs and Marchwood's kitchens in terms of when you can eat?
 
-**Answer:**
+**Answer:** Kestrelford's pubs only serve food during specific windows (12 to 2 and 6 to 8:30) with nowhere to eat outside of those times, whereas Marchwood keeps later hours with kitchens serving until 10:30pm, and until midnight on Fridays and Saturdays. 
 
-```
-```
+Sources: `guide_eating.md`, `guide_marchwood.md`, and `guide_kestrelford.md`.
 
-**My relevance cutoff:**
+Sources retrieved: guide_eating.md, guide_kestrelford.md, guide_marchwood.md
 
-<!-- The number you set in config.py, and how you got there.
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
+**My relevance cutoff:** `THRESHOLD = 0.6` in `config.py`.
 
-     Milestone 4. -->
+I ran all ten questions through retrieval and wrote down the best (lowest)
+distance for each. The two groups didn't overlap at all. Everything my guides
+cover landed between **0.2132 and 0.4247**, and everything they don't landed
+between **0.8026 and 0.9747**. That's a gap of **0.378** with nothing inside it,
+which is wider than the spread of either group on its own.
+
+The midpoint of the gap is 0.6136, so the starter's default of 0.6 was already
+almost exactly where I would have put it. I left it alone instead of changing
+the number just to show I did something. It clears my worst in-corpus question
+by 0.175 and my closest out-of-scope question by 0.203, so there's room on both
+sides and no single question is deciding where the cutoff falls.
+
+The honest caveat is that a gap this clean says as much about my out-of-scope
+questions as it does about my cutoff. Diesel engines and the 1994 World Cup are
+nowhere near a set of regional travel guides, so they were never a hard test to
+begin with. A question like "what's the best restaurant in Edinburgh?" is the
+right topic but the wrong region, and it would probably land much closer to the
+boundary. I don't actually know from this data which side of 0.6 it would fall
+on.
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| What's the difference between Kestrelford's pubs and Marchwood's kitchens in terms of when you can eat? | yes | 0.3660 |
+| What's the most common source of confusion for visitors using buses in the region? | yes | 0.4247 |
+| What can you do at Givens Mill in spring or summer that you can't do in winter? | yes | 0.3846 |
+| How much extra time should you allow to reach the Elder Ness lighthouse at the highest spring tides, and why? | yes | 0.2132 |
+| How much cheaper is Fell Street compared to the Halden Bay harbour front, and why is it cheaper? | yes | 0.4007 |
+| What is the capital of Mongolia? | no | 0.8026 |
+| How do I change the oil in a diesel engine? | no | 0.8917 |
+| Who won the 1994 World Cup? | no | 0.9747 |
+| What is the recommended dosage of ibuprofen for a headache? | no | 0.8486 |
+| How do I write a for loop in Rust? | no | 0.8130 |
+
+Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 
 ## How I Used AI
 
