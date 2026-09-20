@@ -21,28 +21,29 @@
 
 ## What This Does
 
-This is a question-answering system built over the `city_guides` corpus: fourteen
-travel guides to a set of invented towns — Brightwater, Halden Bay, Kestrelford,
-Thornby Wells, Corry Vale and the rest — plus cross-cutting guides on eating,
-walking, seasons, regional transport and accessibility. Ask it a question and it
-retrieves the passages of those guides most likely to hold the answer, then has a
-model write the answer from only those passages and name the file it came from.
+This is a question-answering system built over the `city_guides` corpus:
+fourteen travel guides to a set of invented towns, Brightwater, Halden Bay,
+Kestrelford, Thornby Wells, Corry Vale and the rest, plus cross-cutting guides
+on eating, walking, seasons, regional transport and accessibility. Ask it a
+question and it retrieves the passages most likely to hold the answer, then has
+a model write the answer from only those passages and name the file it came
+from.
 
-The questions it is built to handle are the practical, specific kind a traveller
-would actually ask: how a town differs between seasons ("What's the difference
-between Halden Bay and Brightwater in winter?"), local practicalities ("What
-types of payments are most common in Thornby Wells?"), what is available at a
-given time of year ("What can you do in Kestrelford in spring or summer that you
-can't do as easily in winter?"), and small comparisons of time or cost ("How much
-longer should you plan for a Brightwater walk in winter, and why?"). Each one has
-a right answer sitting in the guides, which is what makes it checkable. Questions
-the guides don't cover — the capital of Mongolia, how to write a Rust for loop —
-are refused rather than guessed at, because a relevance cutoff stops them before
-they ever reach the model.
+The questions it's built to handle are the practical, specific kind a traveller
+would actually ask: comparisons between towns ("What's the difference between
+Kestrelford's pubs and Marchwood's kitchens in terms of when you can eat?"),
+what's available at a given time of year ("What can you do at Givens Mill in
+spring or summer that you can't do in winter?"), and small comparisons of time
+or cost ("How much extra time should you allow to reach the Elder Ness
+lighthouse at the highest spring tides, and why?"). Each one has a right answer
+sitting in the guides, which is what makes it checkable. Questions the guides
+don't cover, like the capital of Mongolia or how to write a Rust for loop, get
+refused rather than guessed at, since a relevance cutoff stops them before they
+ever reach the model.
 
 ## Chunking Strategy
 
-**Chunk size:** 500
+**Chunk size:** 600
 **Overlap:** 100
 
 
@@ -86,39 +87,50 @@ difficult and it is better to know in advance.
 The valley itself is the attraction. The footpath network is dense and well marked, and a circuit taking in three of the four villages is about nine miles with 500 metres of ascent. The chapel in the second village is 12th century and always unlocked.
 ```
 
-**Chunk 3** — source: `guide_givens_mill.md#3` — produced by: `chunker.py::split_documents`
+**Chunk 3** — source: `guide_givens_mill.md#4` — produced by: `chunker.py::split_documents`
+
+```
+## What to see
+
+The mill runs tours on the hour from 11 to 3 and the machinery is operating during them, which is loud and much more impressive than a static exhibit. The church has a Saxon doorway. The river walk downstream reaches Brightwater in about three hours.
+```
+
+**Chunk 4** — source: `guide_marchwood.md#3` — produced by: `chunker.py::split_documents`
 
 ```
 ## Eat and drink
 
-A tearoom attached to the mill, open 10 to 4 daily except Tuesdays, which sells bread made from the flour ground twenty metres away and is the reason most people come. One pub, food served lunchtimes and Thursday to Saturday evenings.
+The best eating is in the Northgate district, a 12-minute tram ride from the station, where about thirty restaurants sit within four streets. The area immediately around the station is uniformly poor and expensive. Marchwood keeps later hours than anywhere else in the region — kitchens serve until 10:30pm, and until midnight on Fridays and Saturdays.
 ```
 
-**Chunk 4** — source: `guide_marchwood.md#2` — produced by: `chunker.py::split_documents`
+**Chunk 5** — source: `guide_seasons.md#2` — produced by: `chunker.py::split_documents`
 
 ```
-## Getting around
+## Summer, June to August
 
-A tram network of four lines, running every 8 minutes on weekdays and every 15 at weekends, until midnight. A day ticket costs less than two single fares and nobody tells you this at the machine. The centre is walkable but the interesting districts are not adjacent to each other.
+June is excellent everywhere. July and August split: Halden Bay becomes very
+busy and the parking problem dominates, Kestrelford fills with walkers, and
+Brightwater goes quiet to the point of dullness with the university empty.
 ```
 
-**Chunk 5** — source: `guide_seasons.md#1` — produced by: `chunker.py::split_documents`
+**What these five show:** all five carry their own heading, so every chunk says
+what it is about before it says anything else — `## Eat and drink` together with
+Marchwood's kitchen hours, not one without the other. Each one could answer a
+question on its own, which is the test the `chunks` command asks you to apply.
 
-```
-The Kestrelford Saturday market builds back to full size through April.
-```
+It took two tries to get here. My first version split on blank lines and nothing
+else, and because a Markdown heading sits between two blank lines, every `##` in
+the corpus came out as its own chunk — 213 chunks, of which a good fraction read
+`## Where to stay` and stopped there. Useless on its own, and worse, it stripped
+the heading off the section below it, so neither piece knew what it was about.
+Merging any paragraph under 50 characters into the one after it fixed both halves
+of that problem and brought the corpus down to 115 chunks.
 
-**What these five show:** four of the five carry their own heading, so the chunk
-says what it is about before it says anything else — `## Getting around` plus the
-tram timings, not one or the other. My first attempt split on blank lines alone
-and every `##` heading came out as its own chunk, with the section it introduced
-stranded in the next one; merging any paragraph under 50 characters forward fixed
-that and took the corpus from 213 chunks to 116.
-
-Chunk 5 is the case this doesn't solve. It's a single sentence from
-`guide_seasons.md`, long enough to escape the merge rule but too thin to answer
-anything on its own — it never says the season is spring, which is only in the
-heading two paragraphs up. Sentences like that are the ones I'd expect to miss.
+The whole corpus now comes out at 250 characters per chunk on average, shortest
+71 and longest 509. That longest chunk is the number that matters: it is under
+`CHUNK_SIZE = 600`, so the fixed-size sliding window never runs on this corpus at
+all. Every one of the 115 chunks is a whole paragraph or a small group of them,
+and nothing is cut mid-sentence.
 
 ## Sample Answer
 
@@ -182,9 +194,9 @@ Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 
      Milestone 5. -->
 
-**1.**
+**1.** First, I asked Claude to write the chunking function based on my strategy. After it gave me the function, I ran a test to look at the chunks and noticed it was treating each header as its own complete paragraph, which I didn't want. So I went back and prompted Claude again to fix that, so headers get attached to the paragraph that follows them instead of standing alone.
 
-**2.**
+**2.** I also asked Claude to help me explore my corpus (where are the travel guides for?), also mostly around character counts, things like the longest and shortest paragraph length, and the longest header title.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never

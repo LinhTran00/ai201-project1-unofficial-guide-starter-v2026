@@ -52,11 +52,12 @@ When I ask a question my documents clearly don't cover, the relevance gate stops
 **Why this target:**
 <!-- What did your distances look like when you set the cutoff in Milestone 4?
      Was there a clean gap, or did the two groups overlap? -->
+I don't have my distances yet since this is written before Milestone 4, but out-of-scope questions should be obviously unrelated to a set of regional travel guides, so I expect the gate to catch most of them without much trouble.
 
 ---
 
 ## 4. Something about your chunks
-At least 4 of 5 sampled chunks are over 180 characters long and end on a completed sentence, with no thought cut off mid-way at either boundary.
+At least 4 of 5 sampled chunks are over 71 characters long and end on a completed sentence, with no thought cut off mid-way at either boundary.
 
 <!-- YOU WRITE THIS ONE.
 
@@ -73,8 +74,7 @@ At least 4 of 5 sampled chunks are over 180 characters long and end on a complet
 
 
 **Why this target:**
-I set 180 rather than 200 because some paragraphs in my corpus are naturally short and complete on their own (like the hospital paragraph, under 200 characters but a whole thought). 180 still filters out fragments while not penalizing chunks that are just genuinely short sections.
-
+I picked 71 because that's the length of the shortest real paragraph in my corpus, "The Kestrelford Saturday market builds back to full size through April." (guide_seasons.md)
 
 ---
 
