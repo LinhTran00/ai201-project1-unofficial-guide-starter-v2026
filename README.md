@@ -21,16 +21,39 @@
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
+This is a question-answering system built over the `city_guides` corpus: fourteen
+travel guides to a set of invented towns — Brightwater, Halden Bay, Kestrelford,
+Thornby Wells, Corry Vale and the rest — plus cross-cutting guides on eating,
+walking, seasons, regional transport and accessibility. Ask it a question and it
+retrieves the passages of those guides most likely to hold the answer, then has a
+model write the answer from only those passages and name the file it came from.
 
-     Milestone 5. -->
+The questions it is built to handle are the practical, specific kind a traveller
+would actually ask: how a town differs between seasons ("What's the difference
+between Halden Bay and Brightwater in winter?"), local practicalities ("What
+types of payments are most common in Thornby Wells?"), what is available at a
+given time of year ("What can you do in Kestrelford in spring or summer that you
+can't do as easily in winter?"), and small comparisons of time or cost ("How much
+longer should you plan for a Brightwater walk in winter, and why?"). Each one has
+a right answer sitting in the guides, which is what makes it checkable. Questions
+the guides don't cover — the capital of Mongolia, how to write a Rust for loop —
+are refused rather than guessed at, because a relevance cutoff stops them before
+they ever reach the model.
 
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** 500
+**Overlap:** 100
+
+
+My split_documents function chunks by paragraph first and only drops into the fixed-size sliding window when a single paragraph is longer than CHUNK_SIZE. So for this corpus, CHUNK_SIZE and CHUNK_OVERLAP aren't really what's driving the chunk boundaries, paragraph structure is.
+
+When I went through the travel_guides corpus, almost no paragraph comes close to 500 characters, most are much shorter than that. That matters for what these two settings are actually doing here. If I lowered CHUNK_SIZE further, it wouldn't make my chunks more precise, it would just force the sliding-window fallback to kick in on paragraphs that currently pass through fine, cutting whole thoughts in half just because they hit an arbitrary limit. A short paragraph is usually one complete idea, so splitting it doesn't add precision, it just breaks it: both halves lose context, and neither one is enough on its own to answer a question.
+
+That's why I kept CHUNK_SIZE at 500, it stays comfortably above the length of my typical paragraph, so almost every paragraph ends up as its own clean, unsplit chunk. CHUNK_OVERLAP at 100 is only there for the rare case: a longer paragraph, or a few short ones merged together by merge_short_paragraphs, that ends up over 500 characters and has to go through the sliding-window path. In that case, 100 characters of overlap is enough to keep a sentence from getting cut cleanly at a chunk boundary, without duplicating a lot of text the way a bigger overlap like 250 would, especially since this fallback path barely gets used anyway.
+
+So overall, for this corpus, paragraph structure is what actually sets my chunk boundaries. CHUNK_SIZE and CHUNK_OVERLAP are just tuned as a backup for the few paragraphs long enough to need the fallback, not as the main way I'm splitting.
+
 
 <!-- What about YOUR documents made you pick these numbers? Short posts and
      long sectioned guides don't want the same chunking, and "800 seemed
@@ -44,39 +67,58 @@
 
 ## Sample Chunks
 
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
+From `python app.py chunks -n 5` — 116 chunks total, five spread across the corpus.
 
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
-
-**Chunk 1** — source: `` — produced by: ``
+**Chunk 1** — source: `guide_accessibility.md#0` — produced by: `chunker.py::split_documents`
 
 ```
+# Getting around the region with limited mobility
+
+An honest assessment rather than a promotional one. Some of these places are
+difficult and it is better to know in advance.
 ```
 
-**Chunk 2** — source: `` — produced by: ``
+**Chunk 2** — source: `guide_corry_vale.md#4` — produced by: `chunker.py::split_documents`
 
 ```
+## What to see
+
+The valley itself is the attraction. The footpath network is dense and well marked, and a circuit taking in three of the four villages is about nine miles with 500 metres of ascent. The chapel in the second village is 12th century and always unlocked.
 ```
 
-**Chunk 3** — source: `` — produced by: ``
+**Chunk 3** — source: `guide_givens_mill.md#3` — produced by: `chunker.py::split_documents`
 
 ```
+## Eat and drink
+
+A tearoom attached to the mill, open 10 to 4 daily except Tuesdays, which sells bread made from the flour ground twenty metres away and is the reason most people come. One pub, food served lunchtimes and Thursday to Saturday evenings.
 ```
 
-**Chunk 4** — source: `` — produced by: ``
+**Chunk 4** — source: `guide_marchwood.md#2` — produced by: `chunker.py::split_documents`
 
 ```
+## Getting around
+
+A tram network of four lines, running every 8 minutes on weekdays and every 15 at weekends, until midnight. A day ticket costs less than two single fares and nobody tells you this at the machine. The centre is walkable but the interesting districts are not adjacent to each other.
 ```
 
-**Chunk 5** — source: `` — produced by: ``
+**Chunk 5** — source: `guide_seasons.md#1` — produced by: `chunker.py::split_documents`
 
 ```
+The Kestrelford Saturday market builds back to full size through April.
 ```
+
+**What these five show:** four of the five carry their own heading, so the chunk
+says what it is about before it says anything else — `## Getting around` plus the
+tram timings, not one or the other. My first attempt split on blank lines alone
+and every `##` heading came out as its own chunk, with the section it introduced
+stranded in the next one; merging any paragraph under 50 characters forward fixed
+that and took the corpus from 213 chunks to 116.
+
+Chunk 5 is the case this doesn't solve. It's a single sentence from
+`guide_seasons.md`, long enough to escape the merge rule but too thin to answer
+anything on its own — it never says the season is spring, which is only in the
+heading two paragraphs up. Sentences like that are the ones I'd expect to miss.
 
 ## Sample Answer
 

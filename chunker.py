@@ -81,6 +81,35 @@ def fallback_split(
     return chunks
 
 
+MIN_PARAGRAPH = 50  # a paragraph shorter than this gets glued to the next one
+
+
+def merge_short_paragraphs(paragraphs: list[str]) -> list[str]:
+    """
+    Join any paragraph shorter than MIN_PARAGRAPH onto the one after it.
+
+    In these guides a Markdown heading is its own paragraph, so splitting on
+    blank lines alone leaves chunks that read `## Where to stay` and nothing
+    else — true, useless, and not even attached to a town. Merging forward
+    keeps each heading with the section it introduces. Runs of short
+    paragraphs collect together, and a short final paragraph has nothing to
+    merge into, so it stands on its own.
+    """
+    merged: list[str] = []
+    pending: list[str] = []
+
+    for paragraph in paragraphs:
+        pending.append(paragraph)
+        if len(paragraph) >= MIN_PARAGRAPH:
+            merged.append("\n\n".join(pending))
+            pending = []
+
+    if pending:
+        merged.append("\n\n".join(pending))
+
+    return merged
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """Split each document on natural paragraph boundaries."""
     chunks: list[Chunk] = []
@@ -93,6 +122,8 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
         paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
         if not paragraphs:
             continue
+
+        paragraphs = merge_short_paragraphs(paragraphs)
 
         index = 0
         for paragraph in paragraphs:
