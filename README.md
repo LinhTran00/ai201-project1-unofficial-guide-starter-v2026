@@ -214,17 +214,280 @@ Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 
      Milestone 1. -->
 
+Source: `results/run_2026-09-23_1811_before.md`, produced by
+`python run_eval.py --label before`. Corpus `city_guides`, top-k 4, relevance
+cutoff 0.6, caching off.
+
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 3 of 5 | 4/5 | 4/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks over 71 chars, ending on a complete sentence | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Number questions: exact number in the retrieved chunk | 1 of 2 | 2/2 | 2/2 | 2/2 | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+Criterion 1's target is the 3 of 5 I wrote in `criteria.md`, not the 4 of 5 the
+README template shipped with.
+
+Criterion 1 is the per-question table from the run log, aggregated: 4 passes,
+4 passes, then 5. The one that moves is question 3, Givens Mill, scored
+`fail | fail | pass` by `scorer.py::judge`.
+
+Criteria 3, 4 and 5 measure stages that run before the model does, and those
+stages are deterministic — the same query returns the same chunks at the same
+distances every time. The run log shows this directly: all three runs of every
+question report an identical best distance and an identical source list. So the
+same number goes in all three columns for those three. That is correct, not
+lazy. Criteria 1 and 2 are the two that read generated text, and criterion 1 is
+the only one that actually varied.
+
+---
+
+### Criterion 1 — retrieved chunk contains the answer (4/5, 4/5, 5/5)
+
+The one question that moved is 3, Givens Mill, `expects: "tour"`. All three
+answers came from `generate.py::answer_from_chunks` and were scored by
+`scorer.py::judge`:
+
+```
+run 1: You can visit the mill, as it runs from March to November and is closed
+entirely in winter (guide_givens_mill.md).                              → fail
+
+run 2: You can visit the mill, as it runs from March to November and is closed
+entirely in winter.
+
+Source: `guide_givens_mill.md`                                          → fail
+
+run 3: You can visit the mill, as it runs from March to November and is closed
+entirely in winter (`guide_givens_mill.md`). You can also take the mill tour,
+though the machinery floor is not accessible (`guide_accessibility.md`). → pass
+```
+
+Retrieval gave the model the same four chunks all three times, at the same
+distances. Run 3 used the `guide_accessibility.md` chunk and the other two
+stopped at the top one, which is the whole difference between pass and fail
+here. Nothing about retrieval changed.
+
+Below are the top chunks `store.py::search` returned for each question, over
+chunks from `chunker.py::split_documents` — the material every answer above was
+working from:
+
+```
+Q: What's the difference between Kestrelford's pubs and Marchwood's kitchens
+   in terms of when you can eat?
+--- chunk 1 | guide_eating.md | distance 0.3660
+## Opening hours
+
+This catches visitors out more than anything else. Outside Marchwood, kitchens
+across the region stop serving at 9pm and often earlier. Kestrelford's pubs
+serve 12 to 2 and 6 to 8:30 and there is nowhere to eat at all outside those
+windows. Elder Ness has one pub, closed Mondays.
+
+--- chunk 2 | guide_marchwood.md | distance 0.4106
+## Eat and drink
+
+The best eating is in the Northgate district, a 12-minute tram ride from the
+station, where about thirty restaurants sit within four streets. The area
+immediately around the station is uniformly poor and expensive. Marchwood keeps
+later hours than anywhere else in the region — kitchens serve until 10:30pm,
+and until midnight on Fridays and Saturdays.
+```
+
+```
+Q: What's the most common source of confusion for visitors using buses in the
+   region?
+--- chunk 1 | guide_regional_transport.md | distance 0.4247
+## Buses
+
+Three operators run in the region and they do not accept each other's tickets,
+which is the single most common source of confusion for visitors. Services
+concentrate on weekday daytimes. Sunday service is minimal to non-existent
+outside the Brightwater town routes.
+```
+
+```
+Q: What can you do at Givens Mill in spring or summer that you can't do in
+   winter?
+--- chunk 1 | guide_givens_mill.md | distance 0.3846
+## When to go
+
+The mill runs March to November and is closed entirely in winter. Late spring
+is the best time. Summer Saturdays are busy enough that the car park becomes
+the limiting factor; come on a weekday if you can.
+
+--- chunk 3 | guide_accessibility.md | distance 0.5757
+**Givens Mill** is one flat street along the river. The mill tour involves
+stairs and the machinery floor is not accessible; the tearoom and riverside are.
+```
+
+```
+Q: How much extra time should you allow to reach the Elder Ness lighthouse at
+   the highest spring tides, and why?
+--- chunk 1 | guide_walking.md | distance 0.2132
+The **Elder Ness shingle** walk to the lighthouse is only 25 minutes but shingle
+is much harder going than the distance suggests. The single access road to the
+headland floods at the highest spring tides, about six times a year, for roughly
+two hours either side of high water.
+```
+
+```
+Q: How much cheaper is Fell Street compared to the Halden Bay harbour front,
+   and why is it cheaper?
+--- chunk 1 | guide_eating.md | distance 0.4007
+# Eating across the region
+
+## The pattern worth knowing
+
+Almost everywhere in this region, the good cooking is one street back from
+wherever the visitors are. Brightwater's riverside strip is priced for people
+who walked there from the hotels; Corry Lane, two streets inland, serves
+comparable food for about a third less. Halden Bay's harbour front is roughly
+double Fell Street, one level up. Pellew Sands's seafront is chips and ice
+cream, and Marine Terrace behind it is where the actual restaurants are.
+```
+
+Question 4 scored `pass | pass | pass`, and it is the one I trust least. The
+chunk holds both halves of what was asked — how long (`roughly two hours either
+side of high water`) and why (`The single access road to the headland floods`)
+— but the model declined to put them together:
+
+```
+run 1: Based on the provided documents, there is no mention of how much *extra*
+time you should allow to reach the Elder Ness lighthouse during the highest
+spring tides. The documents only state that the single access road floods at
+the highest spring tides, about six times a year, for roughly two hours either
+side of high water (guide_walking.md and guide_elder_ness.md).          → pass
+```
+
+That is a refusal, and it scored a pass because the words `two hours` happened
+to appear inside the sentence explaining why it could not answer. My `expects`
+string is a substring check, so it cannot tell an answer from a refusal that
+quotes the right number. All three runs passed for that reason. See the
+diagnosis below.
+
+### Criterion 2 — every answer names a source (5/5, 5/5, 5/5)
+
+Produced by `generate.py::answer_from_chunks`. All fifteen answers named at
+least one source document. A sample across the three runs, showing that the
+*format* varied while the presence of a citation did not:
+
+```
+run 1: The single most common source of confusion for visitors is that the three
+bus operators in the region do not accept each other's tickets
+(*guide_regional_transport.md*).
+
+run 2: Kestrelford's pubs only serve food during specific windows (12 to 2 and
+6 to 8:30) with nowhere to eat outside those times, whereas Marchwood's kitchens
+keep later hours, serving until 10:30pm and until midnight on Fridays and
+Saturdays.
+
+Source: `guide_eating.md`, `guide_marchwood.md`, and `guide_kestrelford.md`
+
+run 3: Prices on the harbour front are roughly double those on Fell Street for
+comparable food, making Fell Street about half the price (`guide_halden_bay.md`
+and `guide_eating.md`).
+```
+
+Three different shapes — a parenthetical in italics, a trailing `Sources:` line,
+and inline backticks. The criterion only asks that a source be named, and one
+always was.
+
+### Criterion 3 — gate stops out-of-corpus questions (5/5)
+
+Produced by `run_eval.py::check_out_of_scope` calling `gate.py::check`, cutoff
+0.6. Pasted from the run log:
+
+```
+| Out-of-scope question                                       | Best distance | Gate    |
+| What is the capital of Mongolia?                            | 0.803         | refused |
+| How do I change the oil in a diesel engine?                 | 0.892         | refused |
+| Who won the 1994 World Cup?                                 | 0.975         | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.849         | refused |
+| How do I write a for loop in Rust?                          | 0.813         | refused |
+```
+
+The gate compares against the best distance of the run. My five real questions
+came in at 0.2132, 0.3660, 0.3846, 0.4007 and 0.4247; the closest out-of-scope
+question is 0.803. That leaves a gap of 0.378 between the two groups with the
+cutoff at 0.6 sitting inside it, and nothing anywhere near the line. The gap is
+why this came out 5/5 rather than scraping the 4 of 5 I predicted — I had
+guessed the two groups might overlap, and they do not come close.
+
+### Criterion 4 — chunk size and boundaries (5/5)
+
+Produced by `chunker.py::split_documents`, 115 chunks total, five sampled with
+`random.seed(0)`:
+
+```
+--- guide_walking.md | 105 chars
+**Thornby Wells** has flat, formal gardens and level streets — the region's
+most accessible town on foot.
+
+--- guide_givens_mill.md | 297 chars
+## Practical notes
+
+Cash is still useful at the market and in smaller places, though cards are
+accepted almost everywhere now. Mobile coverage is good in the centre and
+patchy on the outskirts. The nearest full hospital is in Brightwater; there is
+a minor injuries unit locally with limited hours.
+
+--- guide_seasons.md | 131 chars
+The coastal path is dramatic and frequently shut. Several riverside businesses
+in Brightwater close entirely from January to March.
+
+--- guide_walking.md | 289 chars
+## Seasonal notes
+
+Add four minutes to any Brightwater walking estimate in winter; the path past
+the pond ices over and people take the long way round. Boots with real tread
+matter more here than any other equipment. Paths are cleared by 7am on weekdays
+and considerably later at weekends.
+
+--- guide_halden_bay.md | 339 chars
+## Eat and drink
+
+Seafood, unsurprisingly, and it is genuinely fresh — the boats land in the early
+morning and the two harbour restaurants buy directly. Prices on the harbour
+front are roughly double those on Fell Street, one level up, for comparable
+food. Everything closes by 9pm and much of it closes entirely from November to
+February.
+```
+
+All five are over 71 characters — the shortest is 105 — and all five end on a
+full stop with no sentence cut at either boundary. The two that start with a
+`##` header have the header attached to the paragraph under it, which is the
+thing I went back and fixed in Milestone 5 of unit 1.
+
+### Criterion 5 — exact number in the retrieved chunk (2/2)
+
+Produced by `store.py::search`. My two number questions and the number each one
+needed:
+
+```
+Q: How much extra time should you allow to reach the Elder Ness lighthouse at
+   the highest spring tides, and why?
+needs: two hours
+--- chunk 1 | guide_walking.md | distance 0.2132
+... floods at the highest spring tides, about six times a year, for roughly
+two hours either side of high water.
+--- chunk 2 | guide_elder_ness.md | distance 0.4840
+A single road in, which floods at the highest spring tides roughly six times a
+year for about two hours either side of high water.
+
+Q: How much cheaper is Fell Street compared to the Halden Bay harbour front,
+   and why is it cheaper?
+needs: half / double
+--- chunk 1 | guide_eating.md | distance 0.4007
+Halden Bay's harbour front is roughly double Fell Street, one level up.
+--- chunk 4 | guide_halden_bay.md | distance 0.5078
+Prices on the harbour front are roughly double those on Fell Street, one level
+up, for comparable food.
+```
+
+Both numbers were retrieved, and both were retrieved twice over from two
+different documents. Note that the corpus says `double`, not `half` — the
+number is there but stated from the other direction, which matters for how the
+scorer reads it.
 
 ## Verdicts
 
