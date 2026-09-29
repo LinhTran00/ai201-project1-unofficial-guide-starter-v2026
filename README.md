@@ -247,23 +247,7 @@ Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 
 ## Diagnoses
 
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
-
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
-
-     The five stages: loading → chunking → embedding → retrieval → generation.
-
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
-
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
-
-     Milestone 3. -->
+All five targets were met, but a few of them were set too low. For criterion 1, I'd raise the bar from 3 of 5 to 4 of 5, since the three runs scored 4/5, 4/5, and 5/5. One of the passes also shouldn't count. On the spring-tide question, the model actually refused to answer, but scorer.py::judge still marked it correct because it only checks whether "two hours" appears anywhere in the response, and the refusal happened to include that phrase. So that pass comes from a flaw in the scorer, not from the model actually answering the question.
 
 ## The Improvement
 
