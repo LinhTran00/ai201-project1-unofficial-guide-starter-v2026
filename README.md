@@ -189,6 +189,11 @@ Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 
 **2.** I also asked Claude to help me explore my corpus (where are the travel guides for?), also mostly around character counts, things like the longest and shortest paragraph length, and the longest header title.
 
+**3.** For Unit 2, I asked GitHub Copilot to inspect why the spring-tide answer
+passed despite refusing to answer. It traced the false pass to the substring
+check in `scorer.py::judge`. I added refusal checks and ran the full evaluation;
+the three spring-tide refusals now score as failures.
+
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
@@ -222,6 +227,8 @@ Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 | 4. Sampled chunks over 71 chars, ending on a complete sentence | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 | 5. Number questions: exact number in the retrieved chunk | 1 of 2 | 2/2 | 2/2 | 2/2 | MET |
 
+Source: [results/run_2026-09-23_1811_before.md](results/run_2026-09-23_1811_before.md).
+
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
      Name the file and function that produced it. -->
@@ -251,9 +258,13 @@ All five targets were met, but a few of them were set too low. For criterion 1, 
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** I updated `scorer.py::judge` so it checks for refusal
+phrases first and marks those answers as incorrect before it looks for the
+expected phrase.
 
-**Why I picked it:**
+**Why I picked it:** On the spring-tide question, the model refused to answer,
+but its refusal still mentioned "two hours." Since the old check only looked
+for that phrase anywhere in the response, it counted the refusal as correct.
 
 <!-- Connect it to a specific diagnosis above in one sentence. If you can't,
      you picked a fix because it sounded impressive. -->
@@ -265,13 +276,20 @@ All five targets were met, but a few of them were set too low. For criterion 1, 
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 4/5 | 4/5 | 4/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks over 71 chars, ending on a complete sentence | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Number questions: exact number in the retrieved chunk | 1 of 2 | 2/2 | 2/2 | 2/2 | MET |
+
+Source: [results/run_2026-09-29_0052_after.md](results/run_2026-09-29_0052_after.md).
 
 **Did it help?**
+
+It improved the evaluation, not the generated answers: criterion 1 scored 4/5
+in all three after runs, and the refusal no longer received credit for repeating
+"two hours." The new result meets the 4/5 target, but the model still refused
+the spring-tide question.
 
 <!-- Say plainly whether it did, and how you know. If it made things worse,
      say that — a change that backfired, honestly reported, earns full credit
@@ -282,6 +300,14 @@ All five targets were met, but a few of them were set too low. For criterion 1, 
 
 ## What's Still Broken
 
+All of the after-run criteria still met their targets, but the spring-tide
+question failed in all three runs. The retrieved guides only list when the
+road is closed. They don't say how much extra travel time to plan for, so the
+model refused instead of guessing. I stopped after fixing the scorer so this
+change could be evaluated on its own. Next, I'd either rewrite the question to
+match what the guides actually say or add a source that includes the travel
+time allowance.
+
 <!-- For each criterion still missed after your fix: what you'd do about it,
      and why you stopped where you did.
 
@@ -291,6 +317,12 @@ All five targets were met, but a few of them were set too low. For criterion 1, 
      Milestone 5. -->
 
 ## What I'd Do Differently
+
+For criterion 1, I'd test retrieval on its own. I would list the evidence each
+answer needs and then check whether that evidence shows up in the top four
+retrieved chunks. Right now the scorer only looks at the final generated
+answer, so it can't tell whether retrieval actually found the right fact or
+whether the model just happened to give a correct-sounding response.
 
 <!-- Knowing what you know now — which of your five criteria would you write
      differently, and why?
