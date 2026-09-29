@@ -239,11 +239,11 @@ Worst in corpus 0.4247 → best out of scope 0.8026. Cutoff 0.6 sits in the gap.
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunk contains the answer | MET | Results were 4/5, 4/5, and 5/5, each meeting the target of 3/5. |
+| 2 | Every answer names a source | MET | All three runs named a source in 5/5 answers, meeting the 5/5 target. |
+| 3 | Gate stops out-of-corpus questions | MET | The gate refused all 5 out-of-corpus questions, exceeding the 4/5 target. |
+| 4 | Sampled chunks over 71 chars and ending on a complete sentence | MET | All 5 sampled chunks met both requirements, exceeding the 4/5 target. |
+| 5 | Number questions: exact number in the retrieved chunk | MET | Both number questions retrieved the needed number, exceeding the 1/2 target. |
 
 ## Diagnoses
 
