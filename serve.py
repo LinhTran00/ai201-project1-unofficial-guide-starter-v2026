@@ -20,18 +20,17 @@ Why this exists: `app.py` runs once and exits, which is fine on your laptop
 and impossible to deploy. A hosted service has to stay up and wait for
 requests. This is the smallest thing that does that.
 
-⚠️ There is deliberately no logging, no timing and no metrics in this file.
-Unit 9 has you build the structured log yourself — the request line, the
-timing field everyone skips, the whole instrument-before-you-deploy exercise.
-Shipping a logger here would hand you the answer to that. Add yours in unit 9;
-this file stays the bare shell until then.
+Capstone: every /ask writes one structured log record through
+`request_log.py::write_record` — answered, refused, bad input or error.
 """
 
 import os
+import time
 
 from flask import Flask, jsonify, request
 
 import config
+from request_log import new_request_id, write_record
 
 app = Flask(__name__)
 
@@ -72,16 +71,37 @@ def ask():
     `"refused": true` so whatever calls this can tell the two apart.
     """
     from app import ask_pipeline
+    from generate import token_counts
 
-    payload = request.get_json(silent=True) or {}
-    question = (payload.get("question") or "").strip()
+    request_id = new_request_id()
+    started = time.perf_counter()
+    tokens_before = token_counts()
+    # Until the body parses, the raw text is the best record of what was sent.
+    question = request.get_data(as_text=True)[:200]
+
+    def log(status, **fields):
+        write_record(
+            request_id, question, status, started, tokens_before,
+            token_counts(), **fields,
+        )
+
+    try:
+        payload = request.get_json(silent=True) or {}
+        question = (payload.get("question") or "").strip()
+    except Exception as exc:
+        # JSON that isn't an object, or a question that isn't a string. Still
+        # a 500 for now, but it leaves a log record instead of nothing.
+        log("error", error=f"{type(exc).__name__}: {exc}")
+        raise
 
     if not question:
+        log("bad_input", error="no question in request")
         return (
             jsonify(
                 {
                     "error": "Send JSON with a question in it, like "
-                    '{"question": "is the housing lottery random?"}'
+                    '{"question": "is the housing lottery random?"}',
+                    "request_id": request_id,
                 }
             ),
             400,
@@ -90,10 +110,20 @@ def ask():
     try:
         outcome = ask_pipeline(question, corpus=config.CORPUS)
     except Exception as exc:  # noqa: BLE001 — a reader gets this, not a traceback
-        return jsonify({"error": f"{type(exc).__name__}: {exc}"}), 500
+        error = f"{type(exc).__name__}: {exc}"
+        log("error", error=error)
+        return jsonify({"error": error, "request_id": request_id}), 500
+
+    log(
+        "refused" if outcome["refused"] else "answered",
+        answer=outcome["answer"],
+        sources=outcome["sources"],
+        best_distance=round(outcome["best_distance"], 4),
+    )
 
     return jsonify(
         {
+            "request_id": request_id,
             "question": question,
             "answer": outcome["answer"],
             "refused": outcome["refused"],
