@@ -346,3 +346,59 @@ That gives me a measured cost per question instead of a guess.
 **Out of scope:** No changes to chunking, the retriever, the threshold or the
 gate, and no UI. If the hosted version answers differently from my laptop, I
 want that to come from hosting, not from something I changed in the pipeline.
+
+## Running It
+
+Live at https://ai201-project1-unofficial-guide-starter-2cna.onrender.com, on
+Render's free tier. `POST /ask` with `{"question": "..."}`, or `GET /health`
+to check the index is there. Setup is in [RUNNING.md](RUNNING.md): the build
+command builds the index (Render keeps no disk between restarts), one gunicorn
+worker to stay under 512 MB, and `AI201_CACHE=0` so every answer is a real
+model call.
+
+The first question after a deploy took 26.3 seconds on the server's own
+clock. After that, answered questions took 3.8 to 4.7 seconds.
+
+## Instrumentation
+
+Every `/ask` writes one JSON line through `request_log.py::write_record`:
+timestamp, request id, question, status (`answered`, `refused`,
+`bad_input` or `error`), a shortened answer, sources, best distance,
+`duration_ms`, prompt and output tokens, and the error if there was one.
+It prints to stdout because Render's Logs tab is the only place logs survive
+on the free tier.
+
+I sent 15 requests with `tools/send_questions.py` plus 3 by hand, and got 18
+records back, one per request. Three of them, straight from Render's logs:
+
+    {"request_id": "c92433a3", "question": "How much cheaper is Fell Street ...", "status": "answered", "best_distance": 0.4007, "duration_ms": 3823, "prompt_tokens": 470, "output_tokens": 107, "error": null}
+    {"request_id": "2f03d7eb", "question": "What is the capital of Mongolia?", "status": "refused", "best_distance": 0.8026, "duration_ms": 3901, "prompt_tokens": 0, "output_tokens": 0, "error": null}
+    {"request_id": "88523915", "question": "[\"hi\"]", "status": "error", "duration_ms": 0, "prompt_tokens": 0, "output_tokens": 0, "error": "AttributeError: 'list' object has no attribute 'get'"}
+
+The last one is a request that failed. Sending a JSON list instead of an
+object crashes `serve.py` with a 500. Before the log, that would have shown up
+only as a traceback with no record of what was sent.
+
+What the log showed me that I didn't expect: refused questions take almost as
+long as answered ones (3.8 seconds on average, against 4.2). A refusal never
+calls the model, so the time is going to embedding and searching on Render's
+small CPU, not to Gemini. On my laptop the same refusals took about 0.1
+seconds.
+
+(Render marks every one of these lines with a red ❌. That's its log viewer
+reacting to the word "error" in the record, even when it's `null`, not an
+actual error.)
+
+## What It Costs
+
+Measured over 7 answered questions on Render: 416 prompt tokens and 70 output
+tokens on average, read from the service's own token counts. At
+`gemini-3.5-flash-lite`'s paid price ($0.30 per million in, $2.50 per million
+out) that's about **$0.0003 per answered question**. I checked one call's full
+usage, and there are no thinking tokens being missed. Refused questions and bad
+input cost nothing, because they never reach the model.
+
+If 100 people a day each asked 3 questions, that's 300 questions, at most
+$0.09 a day, or about $2.70 a month, even if none of them were refused. Hosting
+is $0 on the free tier. The real cost of free hosting isn't money, it's the
+cold start, and the sleep after 15 minutes of no traffic.
