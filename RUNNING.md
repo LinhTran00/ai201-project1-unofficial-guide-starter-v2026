@@ -1,6 +1,60 @@
 # Running this project
 
-Everything about how the starter works and how to use it.
+Everything about how the starter works and how to use it. The capstone deploy
+comes first; the original starter notes are below it.
+
+---
+
+## Capstone: deploying to Render
+
+The Unofficial Guide runs on Render as a web service, behind `serve.py`.
+
+### Settings
+
+| Setting | Value |
+|---|---|
+| Service type | Web Service, connected to this GitHub repo, branch `main` |
+| Runtime | Python. The version comes from `.python-version` (3.12) |
+| Build command | `pip install -r requirements.txt && python app.py index` |
+| Start command | `gunicorn serve:app --workers 1 --timeout 120` |
+| Instance type | Free |
+| Health check path | `/health` |
+
+### Environment variables
+
+| Variable | Value | Why |
+|---|---|---|
+| `GEMINI_API_KEY` | your key, added as a secret | the model call. Never commit it |
+| `AI201_CACHE` | `0` | every request is a real model call, so token counts and cost are real |
+
+`.env` is not in the repo, so the key has to be set in Render's dashboard.
+
+### Why these choices
+
+- **The index is built in the build command.** Render's free tier has no disk
+  that survives a restart, so `chroma_db/` has to be rebuilt on every deploy.
+  If `/health` says `index_ready: false`, the build step didn't run.
+- **One worker.** Each worker loads its own copy of the embedding model and
+  Chroma, and the free tier has 512 MB. One worker also means the token counts
+  in the log belong to one request at a time.
+- **`--timeout 120`.** gunicorn's default of 30 seconds kills a request that is
+  still waiting on the model or on a cold start.
+
+### Checking it
+
+```bash
+curl https://<your-app>.onrender.com/health
+curl -X POST https://<your-app>.onrender.com/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How much cheaper is Fell Street compared to the Halden Bay harbour front?"}'
+python tools/send_questions.py https://<your-app>.onrender.com --label before
+```
+
+### Where the logs are
+
+Every `/ask` prints one JSON line to stdout (see `request_log.py`). On Render
+that's the **Logs** tab of the service. Locally it also goes to
+`logs/requests.jsonl`, which is git-ignored.
 
 ---
 
@@ -217,8 +271,8 @@ gunicorn serve:app                 # the way a host starts it
 > the first request after a quiet spell waits roughly a minute for it to wake
 > up. That's the tier, not your code.
 
-`serve.py` has **no logging and no timing in it on purpose** — building that is
-the unit 9 exercise, and it is easier to instrument something you wrote.
+For the capstone, `serve.py` now logs every request through `request_log.py`.
+See the deploy section at the top of this file.
 
 ---
 
