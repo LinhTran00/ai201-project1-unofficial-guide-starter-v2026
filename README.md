@@ -328,3 +328,21 @@ whether the model just happened to give a correct-sounding response.
      differently, and why?
 
      Milestone 5. -->
+
+# Capstone
+
+**What This Extends:** My Unit 1 and Unit 2 system, the Unofficial Guide over
+the `city_guides` corpus. Right now it only runs on my laptop, through
+`python app.py ask` or `serve.py` on localhost. The retrieval, the 0.6 relevance
+gate and the grounded prompt are the parts I already tested in Unit 2, and I'm
+not changing any of them here.
+
+**The Shape:** Shape A, deploy and instrument. I'm putting `serve.py` on Render
+so it's reachable from a real URL, and adding a structured log to it. Every
+request to `/ask` will write one record with what was asked, whether it got
+answered, refused or failed, how long it took, and how many tokens it used.
+That gives me a measured cost per question instead of a guess.
+
+**Out of scope:** No changes to chunking, the retriever, the threshold or the
+gate, and no UI. If the hosted version answers differently from my laptop, I
+want that to come from hosting, not from something I changed in the pipeline.
