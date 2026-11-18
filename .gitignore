@@ -19,6 +19,9 @@ chroma/
 # Cached model responses
 .cache/
 
+# Local request log — on Render the copy that lasts is stdout
+logs/
+
 # OS noise
 .DS_Store
 Thumbs.db
