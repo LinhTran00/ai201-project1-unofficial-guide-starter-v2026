@@ -132,3 +132,80 @@ I set this at 1 of 2 because only 2 of my 5 questions ask for a number, and I ha
      The whole reason the originals stay visible is so someone can see what you
      said before you knew the answer.
      ───────────────────────────────────────────────────────────────────────── -->
+
+# Capstone
+
+Five criteria for the hosted, instrumented version on Render, written before
+any trial runs. Each trial is one run of `tools/send_questions.py` against the
+Render URL: 5 in-corpus questions, 5 out-of-scope questions and 5 bad inputs.
+
+---
+
+## 1. Every request leaves a complete log record
+
+In every trial, all 15 requests to `/ask` leave exactly one log record in
+Render's logs, with every field filled in (`status`, `duration_ms`, both token
+counts, and `error` when something went wrong). 15 of 15.
+
+**Why this target:**
+The log is the whole point of this capstone. If even one request goes missing,
+especially a failed one, then I can't trust the cost or the timing numbers
+I work out from it, so anything under 15 of 15 is a miss.
+
+---
+
+## 2. Bad input gets a 400, not a 500
+
+Every bad request (an empty question, a missing `question` key, a body that
+isn't JSON, a question that isn't a string, a JSON list instead of an object)
+gets a 400 with a message saying what to send, not a 500. 5 of 5.
+
+**Why this target:**
+All five of these are the caller's mistake, not the server's, so all five
+should be a 400. One crash already showed up in Render's logs as a full
+traceback while I was testing the logging, so this is the bad path I most expect to fail.
+
+---
+
+## 3. Warm answers come back in under 5 seconds
+
+For answered questions after the first one in a trial, at least 9 of 10 have a
+`duration_ms` under 5000 in the log. Each trial has 5 answered questions, so
+this is counted over the first two trials combined.
+
+**Why this target:**
+In my first test on Render, warm answers took between 3.8 and 4.7 seconds,
+and almost all of that was embedding and search, not the model. 5 seconds
+is only just above that, so a slow day on Render's shared CPU could
+push me over it. I'm allowing one miss out of 10 so a single slow request
+doesn't decide it.
+
+---
+
+## 4. A cold start still answers
+
+After the service has been asleep for at least 15 minutes, the first `/ask`
+still returns a 200 with an answer within 90 seconds on the client's clock,
+not a timeout or a 502. 3 of 3 times.
+
+**Why this target:**
+The first request after my deploy took 26.3 seconds just inside the app,
+loading the embedding model. A wake from sleep adds Render's own spin-up on top
+of that. 90 seconds leaves room for both but stays under gunicorn's 120-second
+timeout. Someone who waits that long and then gets an error is the worst
+result this system can give.
+
+---
+
+## 5. The hosted gate still refuses out-of-scope questions
+
+On Render, all 5 out-of-scope questions in `questions.py` are refused with 0
+tokens used, in every trial. 5 of 5.
+
+**Why this target:**
+In Unit 2 the gate refused 5 of 5 locally, and the out-of-scope distances
+(0.80 to 0.97) were nowhere near the 0.6 cutoff. Hosting shouldn't change any
+of that, since the index and the embedding model are the same, so any miss
+would mean the hosted version isn't the same system. 0 tokens also proves
+the refusal happened before the model was called, which matters for the
+cost numbers.
