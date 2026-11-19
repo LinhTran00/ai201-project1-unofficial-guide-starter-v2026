@@ -86,8 +86,23 @@ def ask():
         )
 
     try:
-        payload = request.get_json(silent=True) or {}
-        question = (payload.get("question") or "").strip()
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            payload = {}  # a JSON list, a number, or not JSON at all
+        raw = payload.get("question")
+        if raw is not None and not isinstance(raw, str):
+            log("bad_input", error=f"question must be a string, got {type(raw).__name__}")
+            return (
+                jsonify(
+                    {
+                        "error": "The question has to be text, like "
+                        '{"question": "is the housing lottery random?"}',
+                        "request_id": request_id,
+                    }
+                ),
+                400,
+            )
+        question = (raw or "").strip()
     except Exception as exc:
         # JSON that isn't an object, or a question that isn't a string. Still
         # a 500 for now, but it leaves a log record instead of nothing.
