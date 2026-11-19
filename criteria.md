@@ -180,6 +180,17 @@ is only just above that, so a slow day on Render's shared CPU could
 push me over it. I'm allowing one miss out of 10 so a single slow request
 doesn't decide it.
 
+> **Revised in capstone, after the before trials:** For answered questions
+> after the first one in each trial, at least 11 of 12 across all three trials
+> have a `duration_ms` under 5000 in the log.
+>
+> **Why revised:** The original couldn't be counted the way I wrote it. Each
+> trial has 5 answered questions, so "after the first one" leaves 4 per trial,
+> and two trials only give 8, not 10. Using all three trials gives 12. 11 of 12
+> is the closest whole number to the 9 of 10 (90%) I meant, so the target
+> doesn't get any easier. 10 of 12 would have been lowering it. The 5-second
+> line stays the same.
+
 ---
 
 ## 4. A cold start still answers
