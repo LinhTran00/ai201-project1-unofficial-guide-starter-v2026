@@ -402,3 +402,59 @@ If 100 people a day each asked 3 questions, that's 300 questions, at most
 $0.09 a day, or about $2.70 a month, even if none of them were refused. Hosting
 is $0 on the free tier. The real cost of free hosting isn't money, it's the
 cold start, and the sleep after 15 minutes of no traffic.
+
+## Capstone Run Log — Before
+
+Each trial is one run of `tools/send_questions.py` against the Render URL
+(5 in-corpus, 5 out-of-scope, 5 bad inputs). The numbers come from the
+`request_log.py::write_record` lines in Render's logs, and the client side is
+saved in `results/capstone_before1_*.json`, `before2` and `before3`.
+Criterion 4 is three separate cold starts, not the trials, saved in
+[results/capstone_before_coldstarts.txt](results/capstone_before_coldstarts.txt).
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Every request leaves a complete log record | 15 of 15 | 15/15 | 15/15 | 15/15 | MET |
+| 2. Bad input gets a 400, not a 500 | 5 of 5 | 3/5 | 3/5 | 3/5 | MISSED |
+| 3. Warm answers under 5 s (revised, see criteria.md) | 11 of 12 | 3/4 | 3/4 | 4/4 | MISSED (10/12) |
+| 4. A cold start still answers within 90 s | 3 of 3 | 54.1 s | 61.6 s | 51.4 s | MET |
+| 5. Hosted gate refuses out-of-scope, 0 tokens | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+**1.** 45 requests, 45 records. One of them isn't what the user saw, though.
+Run 1 started right as Render was swapping in a new deploy. The old instance
+answered the Kestrelford question and logged it:
+
+    {"request_id": "62759a70", "status": "answered", "duration_ms": 4334, "prompt_tokens": 426, "output_tokens": 79, "error": null}
+
+but the client got a 502 from Render's proxy after 2 seconds. The log says
+`answered` and the user got an error page.
+
+**2.** The same two bad inputs crash every time, in `serve.py::ask`:
+
+    {"question": "{\"question\": 5}", "status": "error", "error": "AttributeError: 'int' object has no attribute 'strip'"}
+    {"question": "[\"hi\"]", "status": "error", "error": "AttributeError: 'list' object has no attribute 'get'"}
+
+The other three (empty question, missing key, not JSON) get a 400.
+
+**3.** The two over 5 seconds were the first request on the new instance after
+that deploy (Bus question, 23,025 ms, which was really a cold start) and the
+Elder Ness question in run 2 (5,203 ms, a real warm miss). Run 3 had all four
+under 5 seconds (3,451 to 3,819 ms).
+
+**4.** Every cold start answered, and each one ran on a new instance. The
+app's own time was 23 to 26 seconds of each one. That's loading the
+embedding model on the first `/ask`. The rest, 28 to 39 seconds, is Render
+waking the instance up:
+
+| Cold start | Idle for | App `duration_ms` | Client total |
+|---|---|---|---|
+| 1 | 32 min | 25,706 | 54.1 s |
+| 2 | ~16 h | 23,075 | 61.6 s |
+| 3 | 17 min | 23,053 | 51.4 s |
+
+A 4th attempt got no response at all, because my laptop had just woken from
+sleep and its network wasn't back. It never reached Render (no log line), so I
+didn't count it.
+
+**5.** All 15 out-of-scope requests were refused with `prompt_tokens: 0` and
+`output_tokens: 0`, and distances between 0.80 and 0.97, the same as in Unit 2.

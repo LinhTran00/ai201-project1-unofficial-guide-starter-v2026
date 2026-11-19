@@ -1,0 +1,260 @@
+{
+  "url": "https://ai201-project1-unofficial-guide-starter-2cna.onrender.com",
+  "label": "before1",
+  "sent_at": "2026-11-18_0130",
+  "health": {
+    "status_code": 200,
+    "client_ms": 197,
+    "json": {
+      "corpus": "city_guides",
+      "detail": "ready",
+      "index_ready": true,
+      "status": "ok"
+    },
+    "text": null
+  },
+  "requests": [
+    {
+      "kind": "in_corpus",
+      "name": "What's the difference between Kestrelford's pubs and Marchwood's kitchens in terms of when you can eat?",
+      "body": "{\"question\": \"What's the difference between Kestrelford's pubs and Marchwood's kitchens in terms of when you can eat?\"}",
+      "status_code": 502,
+      "client_ms": 2084,
+      "json": null,
+      "text": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>502</title>\n    <style>@font-face {\n  font-family: \"Roobert\";\n  font-weight: 500;\n  font-style: normal;\n  font-stretch: normal;\n  src: url(\"data:font/woff2;base64,d09GMk9UVE8AAKewAAwAAAABa6QAAKdfAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAADYKmehqCHhuC4UocpRQGYACLBgE2AiQDkygEBgWFRwcgW8pqkQKZcr0u0nk2H+gc25rBL5CqkDOqYXNqo87dNmL1mgByHi4yIGwcgLFJz2f/////f/pSkaHK"
+    },
+    {
+      "kind": "in_corpus",
+      "name": "What's the most common source of confusion for visitors using buses in the region?",
+      "body": "{\"question\": \"What's the most common source of confusion for visitors using buses in the region?\"}",
+      "status_code": 200,
+      "client_ms": 23230,
+      "json": {
+        "answer": "The single most common source of confusion for visitors is that the three bus operators in the region do not accept each other's tickets (guide_regional_transport.md).",
+        "best_distance": 0.4247,
+        "corpus": "city_guides",
+        "question": "What's the most common source of confusion for visitors using buses in the region?",
+        "refused": false,
+        "request_id": "14c6699e",
+        "sources": [
+          "guide_accessibility.md",
+          "guide_kestrelford.md",
+          "guide_marchwood.md",
+          "guide_regional_transport.md"
+        ],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "in_corpus",
+      "name": "What can you do at Givens Mill in spring or summer that you can't do in winter?",
+      "body": "{\"question\": \"What can you do at Givens Mill in spring or summer that you can't do in winter?\"}",
+      "status_code": 200,
+      "client_ms": 4304,
+      "json": {
+        "answer": "You can visit the mill, as it runs from March to November and is closed entirely in winter (`guide_givens_mill.md`). You can also take the mill tour, which is unavailable in winter since the mill is closed (`guide_accessibility.md`).",
+        "best_distance": 0.3846,
+        "corpus": "city_guides",
+        "question": "What can you do at Givens Mill in spring or summer that you can't do in winter?",
+        "refused": false,
+        "request_id": "26a39884",
+        "sources": [
+          "guide_accessibility.md",
+          "guide_givens_mill.md",
+          "guide_thornby_wells.md"
+        ],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "in_corpus",
+      "name": "How much extra time should you allow to reach the Elder Ness lighthouse at the highest spring tides, and why?",
+      "body": "{\"question\": \"How much extra time should you allow to reach the Elder Ness lighthouse at the highest spring tides, and why?\"}",
+      "status_code": 200,
+      "client_ms": 3375,
+      "json": {
+        "answer": "The provided documents do not state how much extra time you should allow to reach the lighthouse at the highest spring tides; they only state that the single access road floods for roughly two hours either side of high water about six times a year (guide_walking.md and guide_elder_ness.md). Therefore, I do not have enough information to answer how much extra time is needed.",
+        "best_distance": 0.2132,
+        "corpus": "city_guides",
+        "question": "How much extra time should you allow to reach the Elder Ness lighthouse at the highest spring tides, and why?",
+        "refused": false,
+        "request_id": "50614930",
+        "sources": [
+          "guide_elder_ness.md",
+          "guide_halden_bay.md",
+          "guide_walking.md"
+        ],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "in_corpus",
+      "name": "How much cheaper is Fell Street compared to the Halden Bay harbour front, and why is it cheaper?",
+      "body": "{\"question\": \"How much cheaper is Fell Street compared to the Halden Bay harbour front, and why is it cheaper?\"}",
+      "status_code": 200,
+      "client_ms": 4284,
+      "json": {
+        "answer": "Prices on Fell Street are roughly half (or the harbour front is roughly double) the prices on the harbour front for comparable food (*guide_halden_bay.md* and *guide_eating.md*). The documents do not explain why Fell Street is cheaper, only noting the general regional pattern that good cooking is typically found one street back from the visitor-heavy strips (*guide_eating.md*).",
+        "best_distance": 0.4007,
+        "corpus": "city_guides",
+        "question": "How much cheaper is Fell Street compared to the Halden Bay harbour front, and why is it cheaper?",
+        "refused": false,
+        "request_id": "99503ec4",
+        "sources": [
+          "guide_eating.md",
+          "guide_halden_bay.md",
+          "guide_regional_transport.md"
+        ],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "out_of_scope",
+      "name": "What is the capital of Mongolia?",
+      "body": "{\"question\": \"What is the capital of Mongolia?\"}",
+      "status_code": 200,
+      "client_ms": 3600,
+      "json": {
+        "answer": "I don't have enough information about that.",
+        "best_distance": 0.8026,
+        "corpus": "city_guides",
+        "question": "What is the capital of Mongolia?",
+        "refused": true,
+        "request_id": "0d574b24",
+        "sources": [],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "out_of_scope",
+      "name": "How do I change the oil in a diesel engine?",
+      "body": "{\"question\": \"How do I change the oil in a diesel engine?\"}",
+      "status_code": 200,
+      "client_ms": 2970,
+      "json": {
+        "answer": "I don't have enough information about that.",
+        "best_distance": 0.8917,
+        "corpus": "city_guides",
+        "question": "How do I change the oil in a diesel engine?",
+        "refused": true,
+        "request_id": "c84420d5",
+        "sources": [],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "out_of_scope",
+      "name": "Who won the 1994 World Cup?",
+      "body": "{\"question\": \"Who won the 1994 World Cup?\"}",
+      "status_code": 200,
+      "client_ms": 2047,
+      "json": {
+        "answer": "I don't have enough information about that.",
+        "best_distance": 0.9747,
+        "corpus": "city_guides",
+        "question": "Who won the 1994 World Cup?",
+        "refused": true,
+        "request_id": "c9d7b6dd",
+        "sources": [],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "out_of_scope",
+      "name": "What is the recommended dosage of ibuprofen for a headache?",
+      "body": "{\"question\": \"What is the recommended dosage of ibuprofen for a headache?\"}",
+      "status_code": 200,
+      "client_ms": 2564,
+      "json": {
+        "answer": "I don't have enough information about that.",
+        "best_distance": 0.8486,
+        "corpus": "city_guides",
+        "question": "What is the recommended dosage of ibuprofen for a headache?",
+        "refused": true,
+        "request_id": "8475854d",
+        "sources": [],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "out_of_scope",
+      "name": "How do I write a for loop in Rust?",
+      "body": "{\"question\": \"How do I write a for loop in Rust?\"}",
+      "status_code": 200,
+      "client_ms": 2761,
+      "json": {
+        "answer": "I don't have enough information about that.",
+        "best_distance": 0.813,
+        "corpus": "city_guides",
+        "question": "How do I write a for loop in Rust?",
+        "refused": true,
+        "request_id": "909c561c",
+        "sources": [],
+        "threshold": 0.6
+      },
+      "text": null
+    },
+    {
+      "kind": "bad_input",
+      "name": "empty question",
+      "body": "{\"question\": \"\"}",
+      "status_code": 400,
+      "client_ms": 410,
+      "json": {
+        "error": "Send JSON with a question in it, like {\"question\": \"is the housing lottery random?\"}",
+        "request_id": "ab2c3900"
+      },
+      "text": null
+    },
+    {
+      "kind": "bad_input",
+      "name": "missing question key",
+      "body": "{\"q\": \"hello\"}",
+      "status_code": 400,
+      "client_ms": 206,
+      "json": {
+        "error": "Send JSON with a question in it, like {\"question\": \"is the housing lottery random?\"}",
+        "request_id": "5c3bdba0"
+      },
+      "text": null
+    },
+    {
+      "kind": "bad_input",
+      "name": "not json",
+      "body": "this is not json",
+      "status_code": 400,
+      "client_ms": 205,
+      "json": {
+        "error": "Send JSON with a question in it, like {\"question\": \"is the housing lottery random?\"}",
+        "request_id": "dfe2f75f"
+      },
+      "text": null
+    },
+    {
+      "kind": "bad_input",
+      "name": "question is a number",
+      "body": "{\"question\": 5}",
+      "status_code": 500,
+      "client_ms": 204,
+      "json": null,
+      "text": "<!doctype html>\n<html lang=en>\n<title>500 Internal Server Error</title>\n<h1>Internal Server Error</h1>\n<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>\n"
+    },
+    {
+      "kind": "bad_input",
+      "name": "body is a list",
+      "body": "[\"hi\"]",
+      "status_code": 500,
+      "client_ms": 206,
+      "json": null,
+      "text": "<!doctype html>\n<html lang=en>\n<title>500 Internal Server Error</title>\n<h1>Internal Server Error</h1>\n<p>The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.</p>\n"
+    }
+  ]
+}

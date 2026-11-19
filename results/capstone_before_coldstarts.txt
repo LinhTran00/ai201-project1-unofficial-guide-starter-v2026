@@ -1,0 +1,15 @@
+cold start 1, sent 08:04:13 UTC
+HTTP 200 in 54.091645s
+{"answer":"Fell Street serves comparable food for roughly half the price of the Halden Bay harbour front (prices on the harbour front are roughly double those on Fell Street). The provided documents do not explain *why* Fell Street is cheaper; they only describe the pricing pattern across the region
+cold start 2, sent 21:01:46 UTC
+HTTP 000 in 21.226926s
+
+(cold start 2 at 21:01 UTC: HTTP 000 after 21s, no response - laptop had just woken from sleep, not counted)
+cold start 2 (redo), sent 00:26:22 UTC
+HTTP 200 in 61.576149s
+curl exit 0
+{"answer":"Prices on Fell Street are roughly half (or the harbour front is roughly double) the prices on the harbour front for comparable food (*guide_halden_bay.md* and *guide_eating.md*). The docume
+cold start 3, sent 00:43:30 UTC
+HTTP 200 in 51.437792s
+curl exit 0
+{"answer":"Prices on Fell Street are roughly half (or the harbour front is roughly double) the prices on the harbour front for comparable food (*guide_halden_bay.md* and *guide_eating.md*). The docume
