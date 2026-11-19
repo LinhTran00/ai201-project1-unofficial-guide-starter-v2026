@@ -458,3 +458,114 @@ didn't count it.
 
 **5.** All 15 out-of-scope requests were refused with `prompt_tokens: 0` and
 `output_tokens: 0`, and distances between 0.80 and 0.97, the same as in Unit 2.
+
+## Capstone Improvement
+
+**What I changed:** In `serve.py::ask`, if the request body isn't a JSON
+object, it's now treated as an empty request, and if `question` is there but
+isn't a string, the server returns a 400 that says the question has to be
+text. Both get logged as `bad_input`. Nothing in retrieval, the gate or the
+prompt changed.
+
+**Why I picked it:** Criterion 2 missed the same way in all three before
+runs: `{"question": 5}` and `["hi"]` crashed with an `AttributeError` and a
+500, because `serve.py` called `.get()` and `.strip()` without checking the
+types first. Both were the caller's mistake, so they should have been a 400.
+I didn't pick criterion 3. Most of that time is embedding on Render's CPU,
+and I didn't have a fix I could point at one cause.
+
+## Capstone Run Log — After
+
+Same setup as before: three runs of `tools/send_questions.py` against Render
+after the fix was live, plus three separate cold starts. Saved in
+`results/capstone_after1_*.json`, `after2`, `after3` and
+[results/capstone_after_coldstarts.txt](results/capstone_after_coldstarts.txt).
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Every request leaves a complete log record | 15 of 15 | 15/15 | 15/15 | 15/15 | MET |
+| 2. Bad input gets a 400, not a 500 | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Warm answers under 5 s (revised, see criteria.md) | 11 of 12 | 2/4 | 3/4 | 4/4 | MISSED (9/12) |
+| 4. A cold start still answers within 90 s | 3 of 3 | 49.8 s | 53.2 s | 60.8 s | MET |
+| 5. Hosted gate refuses out-of-scope, 0 tokens | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+
+The two inputs that used to crash, from Render's log after the fix:
+
+    {"request_id": "7e2f7ddf", "question": "{\"question\": 5}", "status": "bad_input", "duration_ms": 0, "error": "question must be a string, got int"}
+    {"request_id": "f0440305", "question": "", "status": "bad_input", "duration_ms": 0, "error": "no question in request"}
+
+The three over 5 seconds were the bus question twice (5,838 and 6,047 ms) and
+Elder Ness once (5,024 ms). The first answer of run 1 took 23,227 ms because
+it was the first request after the deploy, and the "after the first one" rule
+kept it out of the count. Cold starts were 21,423, 23,827 and 32,523 ms inside
+the app.
+
+**Did it help?**
+
+Yes for criterion 2: it went from 3/5 in every before run to 5/5 in every
+after run, and nothing else got worse because of it. Criterion 3 went from
+10/12 to 9/12, but the fix didn't touch anything that runs on a normal
+question, so I read that as Render's CPU being slower that evening, not as
+something the change did. The other three criteria were MET before and are
+still MET.
+
+## Capstone Verdicts
+
+| # | Criterion | Verdict | How I decided |
+|---|---|---|---|
+| 1 | Every request leaves a complete log record | MET | 15/15 in all six runs. One record in the before runs said `answered` while the client got a 502 during a deploy, so the record existed but didn't match what the user saw. |
+| 2 | Bad input gets a 400, not a 500 | MET | 3/5 in every before run, 5/5 in every after run, after the fix. |
+| 3 | Warm answers under 5 s | MISSED | 9/12 after, against a target of 11/12 (10/12 before). Counted from `duration_ms` in the log, not the client's clock. |
+| 4 | A cold start still answers within 90 s | MET | 3/3 before (51 to 62 s) and 3/3 after (50 to 61 s). The slowest was still about 30 s under the target. |
+| 5 | Hosted gate refuses out-of-scope, 0 tokens | MET | 5/5 refused with 0 tokens in all six runs. |
+
+## Capstone: What's Still Broken
+
+**Criterion 3, warm latency.** Still missed. Refused questions take 2 to 4
+seconds even though they never call the model, so most of the time is
+embedding and search on Render's free CPU. On my laptop the same step takes
+about 0.1 seconds. I stopped here because the only fixes I can see are a paid
+instance with more CPU, or a smaller embedding model, which would change the
+retriever and the 0.6 cutoff that I said were out of scope.
+
+**Cold starts load the model on the first question.** 21 to 33 seconds of
+every cold start is the app itself loading the embedding model on the first
+`/ask`, on top of 28 to 39 seconds of Render waking up. Loading the model when
+the server starts would move that time instead of removing it, and I didn't
+measure whether it would help.
+
+**The log can't see a failure in Render's proxy.** During a deploy, the old
+instance answered a question and logged `answered`, but the client got a 502.
+My log only knows what happened inside `serve.py`, so anything Render does in
+front of it is invisible unless I check from the client side too, which is
+why `send_questions.py` saves its own copy.
+
+**The fix made one log record less useful.** A body like `["hi"]` used to be
+logged with the raw text in `question`. Now it's turned into an empty request
+first, so the record shows `"question": ""`. The status is right, but I can't
+tell from the log what was actually sent.
+
+**The request budget never resets on a server.** `config.py` stops after 300
+model calls in a session. On the command line that resets every run, but on
+Render the process stays up, so after 300 answered questions every `/ask`
+would fail until the next restart. My trials never got close, so I didn't
+change it, but a real site with 100 people a day would hit it in a day.
+
+## Capstone: How I Used AI
+
+**1.** I used Claude to help write `request_log.py` and wire it into
+`serve.py`. I decided what each record should hold (status, timing, tokens,
+error), and Claude wrote the function. When it suggested leaving the
+bad-input crash alone so the before runs would catch it, I agreed, and that
+crash became the miss I fixed in the improvement.
+
+**2.** I also used it to understand how my code and Render fit together:
+why the index has to be built in the build command, why there's only one
+worker, why the first question after a deploy or a sleep is so slow, and why
+one request got a 502 while my log said it was answered. It turned out
+Render had swapped in a new deploy in the middle of the request.
+
+**3.** Claude drafted my five capstone criteria from the numbers in my first
+Render run, and I reviewed them before any trials. One of them (criterion 3)
+turned out to be counted wrong, which I fixed with a revision note instead of
+changing the target.
